@@ -1,0 +1,71 @@
+.lhep-steps {
+
+  --lhep-steps-finish-color: #90A3F4;
+  --lhep-steps-process-color: #FCC702;
+  --lhep-steps-process-text-color: #FCC702;
+  --lhep-steps-wait-color: #D7D9E0;
+
+  &-branch {
+    display: flex;
+    gap: 10px;
+
+    .branch-node-container {
+
+      /deep/.node {
+        display: flex;
+        justify-content: center;
+        box-sizing: border-box;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+
+        &.wait {
+          .lhep-step-branch__line {
+            border-color: var(--lhep-steps-wait-color);
+          }
+        }
+
+        &.process {
+          .lhep-step-branch__line {
+            border-color: var(--lhep-steps-process-color);
+            border-style: dashed;
+            border-bottom: none;
+          }
+        }
+
+        &.finish {
+          .lhep-step-branch__line {
+            border-color: var(--lhep-steps-finish-color);
+          }
+        }
+
+        .lhep-step-branch__line {
+          flex: 1;
+          border: 1px solid;
+          border-bottom: none;
+          &.left {
+            border-right: none;
+          }
+          &.right {
+            border-left: none;
+          }
+        }
+
+        .lhep-step__node {
+          transform: translateY(-10px);
+          background-color: #fff;
+        }
+      }
+    }
+  }
+
+  .no-margin-bottom {
+    /deep/.node {
+      margin-bottom: 0;
+    }
+  }
+
+  &-normal {
+    display: flex;
+    gap: 10px;
+  }
+}
