@@ -4,68 +4,69 @@
 
   &.wait {
 
-    .lhep-step__index {
-      background-color: var(--lhep-steps-wait-color);
+    .branch-step__index {
+      background-color: var(--branch-steps-wait-color);
     }
 
-    .lhep-step__line {
-      border-color: var(--lhep-steps-wait-color);
+    .branch-step__line {
+      border-color: var(--branch-steps-wait-color);
     }
 
-    .lhep-step__title {
+    .branch-step__title {
       color: #808191;
     }
 
-    .lhep-step__description {
+    .branch-step__description {
       color: #B9B9B9;
     }
   }
 
   &.process {
 
-    .lhep-step__index {
-      background-color: var(--lhep-steps-process-color);
+    .branch-step__index {
+      background-color: var(--branch-steps-process-color);
     }
 
-    .lhep-step__line {
-      border-color: var(--lhep-steps-process-color);
+    .branch-step__line {
+      border-color: var(--branch-steps-process-color);
       border-style: dashed;
       border-bottom: none;
       border-right: none;
       border-left: none;
     }
 
-    .lhep-step__title {
-      color: var(--lhep-steps-process-text-color);
+    .branch-step__title {
+      color: var(--branch-steps-process-text-color);
     }
 
-    .lhep-step__description {
+    .branch-step__description {
       color: #959597;
     }
   }
 
   &.finish {
 
-    .lhep-step__index {
-      background-color: var(--lhep-steps-finish-color);
+    .branch-step__index {
+      background-color: var(--branch-steps-finish-color);
     }
 
-    .lhep-step__line {
-      border-color: var(--lhep-steps-finish-color);
+    .branch-step__line {
+      border-color: var(--branch-steps-finish-color);
     }
 
-    .lhep-step__title,.lhep-step__description {
+    .branch-step__title,.branch-step__description {
       color: #5C5C5C;
     }
   }
 
-  .lhep-step__node {
+  .branch-step__node {
+    transform: translateY(-11px);
     text-align: center;
 
-    .lhep-step__head {
+    .branch-step__head {
       margin-bottom: 4px;
 
-      .lhep-step__index {
+      .branch-step__index {
         margin: 0 auto;
         width: 24px;
         height: 24px;
@@ -78,28 +79,33 @@
       }
     }
 
-    .lhep-step__title {
+    .branch-step__title {
       font-size: 14px;
       margin-bottom: 4px;
       line-height: 20px;
     }
 
-    .lhep-step__description {
+    .branch-step__description {
       font-size: 12px;
+      max-width: 200px;
+      white-space: wrap;
+      word-break: break-all;
 
       .description__popo {
         cursor: pointer;
         &:hover {
           color: #4162E4;
+          text-decoration: underline;
+          text-underline-color: #4162E4;
+          text-underline-offset: 3px;
         }
       }
     }
   }
 
-  .lhep-step__line {
+  .branch-step__line {
     height: 0;
     width: 100px;
     border-top: 1px solid;
-    transform: translateY(11px);
   }
 }

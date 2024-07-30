@@ -1,51 +1,107 @@
 <template>
   <div
+    v-show="!step.placeholder"
     class="node"
     :class="{'wait': isWait, 'process': isProcess, 'finish': isFinish}"
   >
-    <!--  左侧边框  -->
-    <div
-      class="lhep-step-branch__line left"
-      :style="borderStyle"
-    />
-    <!--  内容区域  -->
-    <div class="lhep-step__node">
+    <!--  并行节点左侧边框  -->
+    <template v-if="isBranch">
+      <!--  左侧边框  -->
+      <div
+        class="branch-step-branch__line left"
+        :style="borderStyle"
+      />
+      <!--  左侧边框延长线  -->
+      <div v-if="step.needAppendBorder" class="append-border left"></div>
+    </template>
+    <!--  左侧内容区域  -->
+    <div class="branch-step__node">
       <!--   节点序号   -->
-      <div class="lhep-step__head">
-        <div class="lhep-step__index">
-          {{indexText || index + 1}}
-        </div>
+      <div class="branch-step__head">
+        <slot v-if="$scopedSlots.head" name="head" :data="step"></slot>
+        <div v-else class="branch-step__index">{{headContent}}</div>
       </div>
       <!--   节点标题   -->
-      <div class="lhep-step__title">
-        <slot v-if="$scopedSlots.title" name="title" :step="step"></slot>
+      <div class="branch-step__title">
+        <slot v-if="$scopedSlots.title" name="title" :data="step"></slot>
         <template v-else>{{step.title || ''}}</template>
       </div>
       <!--   节点描述   -->
       <div
-        class="lhep-step__description"
+        class="branch-step__description"
       >
-        <slot v-if="$scopedSlots.description" name="description" :step="step"></slot>
-        <span
-          v-else
-          @click="sendPopo(step.email)"
-          :class="{'description__popo': usePopo}"
-        >{{step.description || ''}}</span>
+        <slot v-if="$scopedSlots.description" name="description" :data="step"></slot>
+        <template v-else>
+          <span
+            v-if="typeof step.description === 'string'"
+            @click="sendPopo"
+            :class="{'description__popo': usePopo}"
+          >{{step.description || ''}}</span>
+          <template v-else-if="Array.isArray(step.description)">
+            <!--     未超过最大显示数量时     -->
+            <template v-if="step.description.length<=nameLimit">
+              <span v-for="(p, index) in step.description" :key="index">
+                <span
+                  @click="sendPopo(index)"
+                  :class="{'description__popo': usePopo}"
+                >
+                {{p || ''}}
+              </span>{{index < step.description.length - 1 ? '、' : ''}}
+              </span>
+            </template>
+            <!--     超过最大显示数量时,hover展示全部     -->
+            <el-tooltip
+              v-else
+              effect="dark"
+              placement="top"
+              popper-class="branch-step-description-tooltip"
+            >
+              <div class="content" slot="content">
+                <span v-for="(p, index) in step.description" :key="index">
+                  <span
+                    @click="sendPopo(index)"
+                    :class="{'description__popo': usePopo}"
+                  >
+                    {{p || ''}}
+                  </span>{{index < step.description.length - 1 ? '、' : ''}}
+                </span>
+              </div>
+              <div>
+                <span v-for="(p, index) in step.description.slice(0, nameLimit)" :key="index">
+                  <span
+                    @click="sendPopo(index)"
+                    :class="{'description__popo': usePopo}"
+                  >
+                    {{p || ''}}
+                  </span>
+                  {{index < nameLimit - 1 ? '、' : ''}}
+                </span>等
+              </div>
+            </el-tooltip>
+          </template>
+        </template>
       </div>
     </div>
-    <!--  右侧边框  -->
+    <template v-if="isBranch">
+      <!--  并行节点右侧边框  -->
+      <div
+        class="branch-step-branch__line right"
+        :style="borderStyle"
+      />
+      <!--  右侧边框延长线  -->
+      <div v-if="step.needAppendBorder" class="append-border right"></div>
+    </template>
+    <!--  右侧连接线  -->
     <div
-      class="lhep-step-branch__line right"
-      :style="borderStyle"
+      v-else-if="!isLast"
+      class="branch-step__line"
     />
   </div>
 </template>
 
 <script>
-import {sendPopoMessage} from '../tool'
-
 export default {
-  name:"LhepBranchNode",
+  name:"BrnachStepNode",
   props: {
     active: {
       type: Number,
@@ -63,13 +119,17 @@ export default {
       type: Number,
       default: 0
     },
-    indexText: {
-      type: [String, Number],
-      default: 0
+    isLast: {
+      type: Boolean,
+      default: false
     },
-    branchBorderWidth: {
+    nameLimit: {
       type: Number,
-      default: 46
+      default: 3
+    },
+    isBranch: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -79,9 +139,9 @@ export default {
   },
   computed: {
     borderStyle() {
-      if (this.step.crossSteps) return {}
+      if (!this.step.needAppendBorder) return {}
       return {
-        width:`${this.branchBorderWidth}px`
+        'borderRight': 'none'
       }
     },
     isWait() {
@@ -92,12 +152,18 @@ export default {
     },
     isFinish() {
       return this.step.status ? this.step.status==='finish' : this.index < this.active
+    },
+    headContent() {
+      if (this.isBranch) {
+        return this.step.indexText || this.step.column + 1
+      }
+      return  this.step.indexText || this.index + 1
     }
   },
   methods: {
-    sendPopo(email) {
-      if (!this.usePopo) return
-      window.location.href = sendPopoMessage(email);
+    sendPopo(index = null) {
+      const email = typeof index === 'number' ? this.step.email[index] : this.step.email
+      this.$emit('sendPopo', email)
     }
   },
   mounted() {

@@ -1,43 +1,23 @@
 <script>
-import LhepStepNode from './node.vue'
-import {sendPopoMessage} from '../tool'
-import eventbus from '../eventbus'
-
+import BranchStepNode from '../branchNode/index.vue'
 export default {
-  name:"LhepStep",
-  components: {LhepStepNode},
+  name:"BrnachStep",
+  components: {BranchStepNode},
   props: {
-    active: {
-      type: Number,
-      default: 0
-    },
-    usePopo: {
-      type: Boolean,
-      default: false
-    },
     step: {
       type: Object,
       default: () => ({}),
       required: true
-    },
-    indexText: {
-      type: String,
-      default: ''
     }
   },
   data() {
     return {
       isLast: false,
-      index: -1
+      index: -1,
+      nameLimit: 3,
+      usePopo: false,
+      active: 0
     };
-  },
-  watch: {
-    usePopo(val) {
-      eventbus.$emit('usePopo', val, this.index)
-    },
-    active(val) {
-      eventbus.$emit('activeChange', val, this.index)
-    }
   },
   beforeCreate() {
     this.$parent.steps.push(this);
@@ -45,20 +25,21 @@ export default {
   methods: {
     sendPopo(email) {
       if (!this.usePopo) return
-      window.location.href = sendPopoMessage(email);
+      console.log(email);
+      // todo 发送消息的方法
     },
     renderSingleNode(h) {
       const title = this.$scopedSlots.title
       const description = this.$scopedSlots.description
       const head = this.$scopedSlots.head
-      return h('lhep-step-node', {
+      return h('branch-step-node', {
         props: {
           step: this.step,
           index: this.index,
-          indexText: this.indexText,
           active: this.active,
           usePopo: this.usePopo,
-          isLast: this.isLast
+          isLast: this.isLast,
+          nameLimit: this.nameLimit
         },
         on: {
           sendPopo: this.sendPopo
@@ -76,7 +57,7 @@ export default {
   },
   render(h) {
     return h('div', {
-      class: 'lhep-step',
+      class: 'branch-step',
     },
       [this.renderSingleNode(h)]
     )
@@ -84,6 +65,3 @@ export default {
 }
 
 </script>
-
-<style scoped lang='less'>
-</style>

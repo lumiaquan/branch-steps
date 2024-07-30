@@ -1,32 +1,34 @@
 <template>
-  <div class="lhep-steps">
-    <div
-      v-for="(branch, index) in branches"
-      class="lhep-steps-branch"
-      :class="{'no-margin-bottom': index+1===branches.length}"
-      :key="index"
-    >
-      <template v-for="node in branch">
-        <!--    分支节点（在第一列和最后一列时不显示）    -->
-        <div
-          v-if="node.column!==0&&node.column!==data.length-1"
-          :data-index="node.column"
-          :data-crossSteps="node.crossSteps"
-          :key="node.column"
-          class="branch-node-container"
-        >
-          <lhep-branch-node
-            :step="node"
-            :active="active"
-            :index="node.column"
-            :index-text="node.indexText || node.column+1"
-            :use-popo="node.usePopo"
-            :branch-border-width="branchBorderWidth"
-          />
-        </div>
-      </template>
-    </div>
-    <div class="lhep-steps-normal">
+  <div class="branch-steps">
+    <template v-if="branches && branches.length">
+      <div
+        v-for="(branch, index) in branches"
+        class="branch-steps-branch"
+        :class="{'no-margin-bottom': index+1===branches.length}"
+        :key="index"
+      >
+        <template v-for="node in branch">
+          <!--    分支节点（在第一列和最后一列时不显示）    -->
+          <div
+            v-if="node.column!==0&&node.column!==data.length-1"
+            :data-index="node.column"
+            :data-crossSteps="node.crossSteps"
+            :key="node.column"
+            class="branch-node-container"
+          >
+            <branch-step-node
+              :step="node"
+              :active="active"
+              :index="node.column"
+              :use-popo="usePopo"
+              :name-limit="nameLimit"
+              :is-branch="true"
+            />
+          </div>
+        </template>
+      </div>
+    </template>
+    <div class="branch-steps-normal">
       <slot/>
     </div>
   </div>
@@ -34,21 +36,16 @@
 
 <script>
 
-import LhepBranchNode from '../LhepStep/branchNode.vue'
-import eventbus from '../eventbus'
+import BranchStepNode from '../branchNode/index.vue'
 
 export default {
-  name:"LhepSteps",
-  components: {LhepBranchNode},
+  name:"BranchSteps",
+  components: {BranchStepNode},
   props: {
     data: {
       type: Array,
       default: () => [],
       required: true
-    },
-    branchBorderWidth: {
-      type: Number,
-      default: 46
     },
     finishColor: {
       type: String,
@@ -62,24 +59,33 @@ export default {
       type: String,
       default: '#D7D9E0'
     },
-    crossBranchBorderWidth: {
+    nameLimit: { // 最多显示描述文本数量
       type: Number,
-      default: 66
+      default: 3
+    },
+    usePopo: {
+      type: Boolean,
+      default: false
+    },
+    active: {
+      type: Number,
+      default: 0
     }
   },
   data() {
     return {
       steps: [],
       branches: [],
-      branchRects: [],
-      active: 0
+      branchRects: []
     }
   },
   watch: {
     steps(val) {
       val.forEach((child, index) => {
         child.index = index
-        this.active = child.active
+        child.nameLimit = this.nameLimit
+        child.usePopo = this.usePopo
+        child.active = this.active
       })
     },
     data: {
@@ -87,9 +93,9 @@ export default {
         this.branches = []
         val.forEach((item, index) => {
           if (item.nodes && item.nodes.length) {
+            this.checkBorderAppend(item.nodes)
             item.nodes.forEach((node, i) => {
               node.column = index
-              node.usePopo = false
               this.branches[i] = this.branches[i]? this.branches[i].concat(node): [node]
             })
           }
@@ -99,86 +105,119 @@ export default {
       deep: true,
       immediate: true
     },
-    finishColor(val) {
+    active(val) {
+      this.steps.forEach(step => {
+        step.active = val
+      })
+    },
+    usePopo(val) {
+      this.steps.forEach(step => {
+        step.usePopo = val
+      })
+    },
+    finishColor() {
       this.changeColor()
     },
-    activeColor(val) {
+    activeColor() {
       this.changeColor()
     },
-    waitColor(val) {
+    waitColor() {
       this.changeColor()
     }
   },
   methods: {
     branchLocation() {
       // 计算分支节点的位置
-      const doms = this.$el.querySelectorAll('.lhep-step .lhep-step__node')
+      const doms = this.$el.querySelectorAll('.branch-step .branch-step__node')
       doms.forEach((dom, index) => {
-        const rect = dom.getClientRects()
-        this.branchRects[index] = rect[0]
+        this.branchRects[index] = dom.getBoundingClientRect()
       })
       const branchNodes = this.$el.querySelectorAll('.branch-node-container')
+      const baseRect = this.$el.querySelector('.branch-steps-normal').getClientRects()
       branchNodes.forEach(dom => {
         const rect = dom.getClientRects()
         // 获取当前节点的索引（column）
         const index = dom.dataset.index
         const left = this.branchRects[index].x + this.branchRects[index].width / 2
         const rectLeft = rect[0].x + rect[0].width / 2
+        let borderWidth, rightBorderWidth
         if (dom.dataset.crosssteps) {
           // 跨节点分支
           const sideIndex = parseInt(index) + parseInt(dom.dataset.crosssteps)
           const sideLeft = this.branchRects[sideIndex].x + this.branchRects[sideIndex].width / 2
           const center = (sideLeft + left) / 2
-          const borderWidth = center - left - rect[0].width/2 + this.crossBranchBorderWidth
-          const borders = dom.querySelectorAll('.lhep-step-branch__line')
-          if (borders && borders.length) {
-            borders.forEach(border => {
-              border.style.width = `${borderWidth}px`
-            })
-          }
+          borderWidth = center - left - rect[0].width/2 + 55 + this.branchRects[index].width / 2
+          rightBorderWidth = sideLeft - center - rect[0].width / 2 + 55 + this.branchRects[sideIndex].width / 2
           dom.style.transform = `translateX(${center - rectLeft - borderWidth}px)`
+          this.appendBorder(dom, rect, index, baseRect)
         } else {
           // 单节点分支
-          dom.style.transform = `translateX(${left - rectLeft}px)`
+          borderWidth = (this.branchRects[index].width - rect[0].width) / 2 + 55
+          dom.style.transform = `translateX(${left - rectLeft - borderWidth}px)`
+        }
+        const borders = dom.querySelectorAll('.branch-step-branch__line')
+        if (borders && borders.length) {
+          borders.forEach((border, i) => {
+            const width = (i === 1 && rightBorderWidth) ? rightBorderWidth : borderWidth
+            border.style.width = `${width}px`
+          })
         }
       })
     },
     changeColor() {
-      this.$el.style.setProperty('--lhep-steps-finish-color', this.finishColor)
-      this.$el.style.setProperty('--lhep-steps-process-color', this.activeColor)
-      this.$el.style.setProperty('--lhep-steps-process-text-color', this.activeColor)
-      this.$el.style.setProperty('--lhep-steps-wait-color', this.waitColor)
+      this.$el.style.setProperty('--branch-steps-finish-color', this.finishColor)
+      this.$el.style.setProperty('--branch-steps-process-color', this.activeColor)
+      this.$el.style.setProperty('--branch-steps-process-text-color', this.activeColor)
+      this.$el.style.setProperty('--branch-steps-wait-color', this.waitColor)
+    },
+    // 检查是否需要将边框延长至主流程
+    checkBorderAppend(list) {
+      for (let i = 1; i < list.length; i++) {
+        list[i].needAppendBorder = Boolean(list[i].crossSteps)
+      }
+    },
+    // 设置边框延长线
+    appendBorder(dom, rect, i, baseRect) {
+      const border = dom.querySelectorAll('.append-border')
+      if (border && border.length) {
+        const height = baseRect[0].y - rect[0].y
+        border.forEach(item => {
+          item.style.height = `${height}px`
+        })
+      }
     }
   },
-  created() {
-    eventbus.$on('usePopo', (val, index) => {
-      this.branches.forEach(b => {
-        b.forEach(node => {
-          if (node.column === index) {
-            node.usePopo = val
-          }
-        })
-      })
-      this.$forceUpdate()
-    })
-
-    // 获取最新的active
-    eventbus.$on('activeChange', (val, index) => {
-      this.active = val
-      this.$forceUpdate()
-    })
-  },
-  beforeDestroy() {
-    eventbus.$off('usePopo')
-  },
   mounted() {
-    this.branchLocation()
-    this.changeColor()
-  },
+    window.requestAnimationFrame(() => {
+      this.branchLocation()
+      this.changeColor()
+    })
+  }
 }
 
 </script>
 
 <style scoped lang='less'>
-@import "../../css/lhepSteps.less";
+@import "../../css/branchSteps.less";
+</style>
+
+<style lang="less">
+.branch-step-description-tooltip {
+
+  .content {
+    max-width: 200px;
+    white-space: wrap;
+    word-break: break-all;
+  }
+
+  .description__popo {
+    cursor: pointer;
+    &:hover {
+      color: #4162E4;
+      text-decoration: underline;
+      text-underline-color: #4162E4;
+      text-underline-offset: 3px;
+    }
+  }
+}
 </style>
